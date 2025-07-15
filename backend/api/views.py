@@ -1,5 +1,4 @@
 import asyncio
-
 from rest_framework.response import Response
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_200_OK, HTTP_201_CREATED, HTTP_500_INTERNAL_SERVER_ERROR
 from rest_framework.views import APIView
@@ -11,6 +10,7 @@ import django_filters
 from .parser import run_parse
 
 
+# Реализация фильтрации
 class ProductFilter(django_filters.FilterSet):
     price_min = django_filters.NumberFilter(field_name='price_sale', lookup_expr='gte')
     price_max = django_filters.NumberFilter(field_name='price_sale', lookup_expr='lte')
@@ -22,6 +22,7 @@ class ProductFilter(django_filters.FilterSet):
         fields = []
 
 
+# API товаров
 class ProductListView(ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
@@ -36,13 +37,15 @@ class ProductListView(ModelViewSet):
         return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
 
+# API для парсера
 class RunScriptView(APIView):
     def post(self, request):
-        name = request.data.get('query')
+        name = request.data.get('name')
+        page = request.data.get('pages')
         if not name:
             return Response({'error': 'fail'}, status=HTTP_400_BAD_REQUEST)
         try:
-            asyncio.run(run_parse(name))
+            asyncio.run(run_parse(name, page))
             return Response({'result': 'success'}, status=HTTP_200_OK)
         except Exception as e:
             return Response({'error': str(e)}, status=HTTP_500_INTERNAL_SERVER_ERROR)

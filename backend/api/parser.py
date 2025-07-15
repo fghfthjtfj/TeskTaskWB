@@ -1,6 +1,5 @@
 import asyncio
 import json
-
 import aiohttp
 
 
@@ -55,7 +54,6 @@ async def insert_data(items):
 
     async with aiohttp.ClientSession() as session:
         for item in items:
-            print(item)
             payload = {
                 'name': item['Название'],
                 'price_basic': item['Базовая цена'] / 100 if item['Базовая цена'] else None,
@@ -66,34 +64,39 @@ async def insert_data(items):
 
             async with session.post(url, json=payload) as response:
                 if response.status == 201:
-                    print(f"✓ Успешно добавлено: {payload['name']}")
+                    print(f"Добавлено: {payload['name']}")
                 else:
                     error_text = await response.text()
-                    print(f"✗ Ошибка ({response.status}) при добавлении '{payload['name']}': {error_text}")
+                    print(f"Ошибка {response.status} {error_text}\n{payload['name']}")
 
 
-async def run_parse(name):
-    pages = 2
+async def run_parse(name, pages):
+    pages += 1
     url = 'https://search.wb.ru/exactmatch/ru/common/v14/search'
+    params = {
+        'ab_testid': 'no_action',
+        'appType': '1',
+        'curr': 'rub',
+        'dest': '-1257786',
+        'hide_dtype': '13',
+        'lang': 'ru',
+        'page': '1',
+        'query': f'{name}',
+        'resultset': 'catalog',
+        'sort': 'popular',
+        'spp': '30',
+        'suppressSpellcheck': 'false',
+    }
     tasks_request = []
     tasks_parce = []
     async with aiohttp.ClientSession() as session:
         semaphore = asyncio.Semaphore(2)
-        for page in range(pages):
-            params = {
-                'ab_testid': 'no_action',
-                'appType': '1',
-                'curr': 'rub',
-                'dest': '-1257786',
-                'hide_dtype': '13',
-                'lang': 'ru',
-                'page': f'{page}',
-                'query': f'{name}',
-                'resultset': 'catalog',
-                'sort': 'popular',
-                'spp': '30',
-                'suppressSpellcheck': 'false',
-            }
+        if pages > 0:
+            for page in range(1, pages):
+                print(page)
+                params['page'] = page
+                tasks_request.append(send_request(session, url, semaphore, params=params))
+        else:
             tasks_request.append(send_request(session, url, semaphore, params=params))
 
         results_request = await asyncio.gather(*tasks_request)
@@ -102,7 +105,6 @@ async def run_parse(name):
             tasks_parce.append(parse_data(result))
 
         results_parce = await asyncio.gather(*tasks_parce)
-        # "Плоский" список
         all_items = [item for sublist in results_parce for item in sublist]
         await insert_data(all_items)
 

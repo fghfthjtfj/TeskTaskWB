@@ -11,6 +11,7 @@ function ProductList() {
 
   // добавление
   const [searchProduct, setSearchProduct] = useState('');
+  const [searchPages, setSearchPages] = useState('');
   const [isParsing, setIsParsing] = useState(false);
 
   // фильтры
@@ -57,7 +58,7 @@ function ProductList() {
   const handleSubmit = () => {
     if (!isParsing) {
       setIsParsing(true);
-      axios.post('http://127.0.0.1:8000/api/parse/', { query: searchProduct })
+      axios.post('http://127.0.0.1:8000/api/parse/', { name: searchProduct, pages: searchPages })
       .then(res => {
         fetchProducts();
         setIsParsing(false);
@@ -77,6 +78,8 @@ function ProductList() {
         <div className="products-data">
           <div className="add-products">
               <input value={searchProduct} onChange={e => setSearchProduct(e.target.value)} placeholder="Введите запрос для парсера"/>
+              <input type="number" value={searchPages} onChange={e => setSearchPages(parseInt(e.target.value) || 1)}   placeholder="Число страниц WB"/>
+
               <button onClick={handleSubmit}>Отправить</button>
               {isParsing && (
                 <p style={{ color: 'green', margin: '0' }}>
