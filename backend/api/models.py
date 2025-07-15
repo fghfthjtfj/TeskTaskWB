@@ -9,3 +9,6 @@ class Product(models.Model):
     feedbacks = models.IntegerField(default=0)
     image = models.ImageField(upload_to='product/', default='product/default.png')
 
+    def __str__(self):
+        return self.name
+
